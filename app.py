@@ -21,11 +21,15 @@ def download_video():
         # Ek temporary folder banate hain
         temp_dir = tempfile.mkdtemp()
         
+        # YouTube Bot-Block Bypass Settings
         ydl_opts = {
             'format': 'best',
             'outtmpl': os.path.join(temp_dir, '%(title)s.%(ext)s'),
             'quiet': True,
-            'no_warnings': True
+            'no_warnings': True,
+            'geo_bypass': True,           # Cloud servers ke location blocks ko bypass karega
+            'nocheckcertificate': True,   # SSL errors ko ignore karega
+            'extractor_args': {'youtube': {'player_client': ['android']}} # YouTube ko lagega ki request Android mobile se aayi hai
         }
 
         # Video Download karna
@@ -37,7 +41,8 @@ def download_video():
         return send_file(filename, as_attachment=True)
 
     except Exception as e:
-        return jsonify({"status": "error", "message": "Failed to download. Check the link."}), 500
+        # Ab agar error aaya toh actual YouTube ki taraf se aaya error aapki screen par dikhega!
+        return jsonify({"status": "error", "message": f"Error Info: {str(e)}"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
