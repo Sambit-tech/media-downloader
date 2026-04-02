@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Downloader Pro</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); height: 100vh; display: flex; justify-content: center; align-items: center; color: white; padding: 20px; }
+        .card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); padding: 40px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 15px 35px rgba(0,0,0,0.2); width: 100%; max-width: 500px; text-align: center; }
+        h2 { margin-bottom: 10px; font-size: 28px; letter-spacing: 1px; }
+        p { color: #b3b3b3; margin-bottom: 30px; font-size: 14px; }
+        input { width: 100%; padding: 15px; background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 10px; color: white; font-size: 16px; outline: none; transition: 0.3s; margin-bottom: 20px; }
+        input:focus { border-color: #00d2ff; box-shadow: 0 0 10px rgba(0, 210, 255, 0.3); }
+        button { width: 100%; padding: 15px; background: linear-gradient(to right, #00d2ff, #3a7bd5); border: none; border-radius: 10px; color: white; font-size: 16px; font-weight: bold; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+        button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 210, 255, 0.4); }
+        button:disabled { background: #555; cursor: not-allowed; transform: none; box-shadow: none; }
+        .status { margin-top: 20px; font-size: 14px; font-weight: bold; display: none; }
+        .success { color: #00e676; }
+        .error { color: #ff5252; }
+        .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,.3); border-radius: 50%; border-top-color: white; animation: spin 1s ease-in-out infinite; display: none; vertical-align: middle; margin-right: 8px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Media Downloader</h2>
+        <p>High-quality video & audio extraction</p>
+        <input type="text" id="urlInput" placeholder="Paste link here (e.g. latest Sidhu Moosewala track...)">
+        <button id="downloadBtn" onclick="startDownload()">
+            <span class="spinner" id="spinner"></span>
+            <span id="btnText">Download Now</span>
+        </button>
+        <div id="statusMessage" class="status"></div>
+    </div>
+
+    <script>
+        async function startDownload() {
+            const url = document.getElementById('urlInput').value;
+            const btn = document.getElementById('downloadBtn');
+            const spinner = document.getElementById('spinner');
+            const btnText = document.getElementById('btnText');
+            const statusDiv = document.getElementById('statusMessage');
+
+            if(!url) { showStatus('Please paste a valid URL first.', 'error'); return; }
+
+            btn.disabled = true; spinner.style.display = 'inline-block';
+            btnText.innerText = 'Downloading... (Please wait)'; statusDiv.style.display = 'none';
+
+            try {
+                const response = await fetch('/download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url })
+                });
+
+                if(response.ok) {
+                    const blob = await response.blob();
+                    const downloadUrl = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = downloadUrl;
+                    a.download = 'Downloaded_Media.mp4'; 
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(downloadUrl);
+                    
+                    showStatus('Download Complete! Check your gallery/files.', 'success');
+                    document.getElementById('urlInput').value = '';
+                } else {
+                    const result = await response.json();
+                    showStatus(result.message, 'error');
+                }
+            } catch (error) {
+                showStatus('Server connection failed.', 'error');
+            } finally {
+                btn.disabled = false; spinner.style.display = 'none';
+                btnText.innerText = 'Download Now';
+            }
+        }
+
+        function showStatus(text, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.innerText = text; statusDiv.className = 'status ' + type;
+            statusDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
