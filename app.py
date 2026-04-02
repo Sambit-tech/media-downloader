@@ -1,7 +1,5 @@
-from flask import Flask, render_template, request, jsonify, send_file
-import yt_dlp
-import os
-import tempfile
+from flask import Flask, render_template, request, jsonify
+import requests
 
 app = Flask(__name__)
 
@@ -18,31 +16,30 @@ def download_video():
         return jsonify({"status": "error", "message": "Please enter a valid URL."}), 400
 
     try:
-        # Ek temporary folder banate hain
-        temp_dir = tempfile.mkdtemp()
-        
-        # YouTube Bot-Block Bypass Settings
-        ydl_opts = {
-            'format': 'best',
-            'outtmpl': os.path.join(temp_dir, '%(title)s.%(ext)s'),
-            'quiet': True,
-            'no_warnings': True,
-            'geo_bypass': True,           # Cloud servers ke location blocks ko bypass karega
-            'nocheckcertificate': True,   # SSL errors ko ignore karega
-            'extractor_args': {'youtube': {'player_client': ['android']}} # YouTube ko lagega ki request Android mobile se aayi hai
+        # Hum direct Cobalt API ka use kar rahe hain jo bot-blocks bypass karti hai
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json"
         }
-
-        # Video Download karna
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info_dict = ydl.extract_info(video_url, download=True)
-            filename = ydl.prepare_filename(info_dict)
-
-        # File sidha aapke phone/browser par bhej dega
-        return send_file(filename, as_attachment=True)
+        payload = {
+            "url": video_url
+        }
+        
+        # API request bhejna
+        response = requests.post("https://api.cobalt.tools/api/json", json=payload, headers=headers)
+        
+        if response.status_code == 200:
+            res_data = response.json()
+            if "url" in res_data:
+                # API ne video ka direct direct link de diya!
+                return jsonify({"status": "success", "download_url": res_data["url"]}), 200
+            else:
+                return jsonify({"status": "error", "message": "API could not process this video."}), 500
+        else:
+            return jsonify({"status": "error", "message": "YouTube blocked the API request temporarily."}), 500
 
     except Exception as e:
-        # Ab agar error aaya toh actual YouTube ki taraf se aaya error aapki screen par dikhega!
-        return jsonify({"status": "error", "message": f"Error Info: {str(e)}"}), 500
+        return jsonify({"status": "error", "message": f"Server Error: {str(e)}"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
