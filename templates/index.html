@@ -45,7 +45,7 @@
             if(!url) { showStatus('Please paste a valid URL first.', 'error'); return; }
 
             btn.disabled = true; spinner.style.display = 'inline-block';
-            btnText.innerText = 'Downloading... (Please wait)'; statusDiv.style.display = 'none';
+            btnText.innerText = 'Fetching High-Speed Link...'; statusDiv.style.display = 'none';
 
             try {
                 const response = await fetch('/download', {
@@ -54,21 +54,21 @@
                     body: JSON.stringify({ url: url })
                 });
 
-                if(response.ok) {
-                    const blob = await response.blob();
-                    const downloadUrl = window.URL.createObjectURL(blob);
+                const result = await response.json();
+
+                if(response.ok && result.status === "success") {
+                    showStatus('Download Started! Check your browser.', 'success');
+                    
+                    // Naya tarika: Direct link par bhej dena jahan se fast download hoga
                     const a = document.createElement('a');
-                    a.style.display = 'none';
-                    a.href = downloadUrl;
-                    a.download = 'Downloaded_Media.mp4'; 
+                    a.href = result.download_url;
+                    a.target = '_blank';
                     document.body.appendChild(a);
                     a.click();
-                    window.URL.revokeObjectURL(downloadUrl);
+                    document.body.removeChild(a);
                     
-                    showStatus('Download Complete! Check your gallery/files.', 'success');
                     document.getElementById('urlInput').value = '';
                 } else {
-                    const result = await response.json();
                     showStatus(result.message, 'error');
                 }
             } catch (error) {
