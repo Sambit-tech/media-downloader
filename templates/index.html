@@ -18,65 +18,55 @@
         .status { margin-top: 20px; font-size: 14px; font-weight: bold; display: none; }
         .success { color: #00e676; }
         .error { color: #ff5252; }
-        .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,.3); border-radius: 50%; border-top-color: white; animation: spin 1s ease-in-out infinite; display: none; vertical-align: middle; margin-right: 8px; }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Naya Widget Container */
+        #widgetContainer { margin-top: 15px; display: none; width: 100%; border-radius: 10px; overflow: hidden; background: rgba(0,0,0,0.3); }
     </style>
 </head>
 <body>
     <div class="card">
         <h2>Media Downloader</h2>
-        <p>High-quality video & audio extraction</p>
+        <p>100% Secure & Fast Extraction</p>
+        
         <input type="text" id="urlInput" placeholder="Paste link here (e.g. latest Sidhu Moosewala track...)">
-        <button id="downloadBtn" onclick="startDownload()">
-            <span class="spinner" id="spinner"></span>
-            <span id="btnText">Download Now</span>
+        
+        <button id="downloadBtn" onclick="generateLink()">
+            <span id="btnText">Get High-Speed Link</span>
         </button>
+
         <div id="statusMessage" class="status"></div>
+        
+        <div id="widgetContainer"></div>
     </div>
 
     <script>
-        async function startDownload() {
+        function generateLink() {
             const url = document.getElementById('urlInput').value;
-            const btn = document.getElementById('downloadBtn');
-            const spinner = document.getElementById('spinner');
-            const btnText = document.getElementById('btnText');
             const statusDiv = document.getElementById('statusMessage');
+            const widgetContainer = document.getElementById('widgetContainer');
+            const btn = document.getElementById('downloadBtn');
 
-            if(!url) { showStatus('Please paste a valid URL first.', 'error'); return; }
-
-            btn.disabled = true; spinner.style.display = 'inline-block';
-            btnText.innerText = 'Fetching High-Speed Link...'; statusDiv.style.display = 'none';
-
-            try {
-                const response = await fetch('/download', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: url })
-                });
-
-                const result = await response.json();
-
-                if(response.ok && result.status === "success") {
-                    showStatus('Download Started! Check your browser.', 'success');
-                    
-                    // Naya tarika: Direct link par bhej dena jahan se fast download hoga
-                    const a = document.createElement('a');
-                    a.href = result.download_url;
-                    a.target = '_blank';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    
-                    document.getElementById('urlInput').value = '';
-                } else {
-                    showStatus(result.message, 'error');
-                }
-            } catch (error) {
-                showStatus('Server connection failed.', 'error');
-            } finally {
-                btn.disabled = false; spinner.style.display = 'none';
-                btnText.innerText = 'Download Now';
+            // Basic check ki link valid hai ya nahi
+            if(!url || !url.includes('youtu')) { 
+                showStatus('Please paste a valid YouTube URL.', 'error'); 
+                return; 
             }
+
+            btn.innerText = 'Bypassing Server... Generating Link...';
+            btn.disabled = true;
+
+            // Render backend ko bypass karke direct client-side button load karna
+            setTimeout(() => {
+                const safeUrl = encodeURIComponent(url);
+                
+                // Hum Loader.to ka secure iframe widget use kar rahe hain
+                widgetContainer.innerHTML = `<iframe style="width:100%;height:60px;border:0;overflow:hidden;" scrolling="no" src="https://loader.to/api/button/?url=${safeUrl}&f=1080"></iframe>`;
+                
+                widgetContainer.style.display = 'block';
+                showStatus('Success! Click the new button below to save.', 'success');
+                
+                btn.style.display = 'none'; 
+            }, 1000);
         }
 
         function showStatus(text, type) {
